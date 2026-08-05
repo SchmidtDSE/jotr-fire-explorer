@@ -38,7 +38,35 @@ veg = veg[~veg.geometry.is_empty & veg.geometry.notna()]
 
 pq = f"{OUT}/jotr-vegetation.parquet"
 veg.to_parquet(pq, compression="zstd", write_covering_bbox=False)
+
+
+def drop_geoparquet_crs(path):
+    """Remove the `crs` key from the GeoParquet metadata so the column reads as
+    OGC:CRS84 (the spec default when `crs` is absent) rather than EPSG:4326.
+
+    Both describe the same lon/lat WKB, but DuckDB types them differently and then
+    refuses ST_Contains across the two — so a file stamped EPSG:4326 cannot be
+    joined to the catalog's collections, which all omit the key. The coordinates
+    are untouched; only the metadata changes.
+    """
+    import pyarrow.parquet as pq_, json as _json
+    t = pq_.read_table(path)
+    md = dict(t.schema.metadata or {})
+    geo = _json.loads(md[b"geo"])
+    for col in geo.get("columns", {}).values():
+        col.pop("crs", None)
+    md[b"geo"] = _json.dumps(geo).encode()
+    pq_.write_table(t.replace_schema_metadata(md), path, compression="zstd")
+
+
+drop_geoparquet_crs(pq)
 print(f"\nGeoParquet  {mb(pq):>9}  {len(veg):,} features, {veg.MapUnit_Name.nunique()} map units")
+
+import pyarrow.parquet as _pq
+_geo = json.loads(_pq.read_schema(pq).metadata[b"geo"])
+_col = _geo["columns"][_geo["primary_column"]]
+print(f"  geoparquet v{_geo['version']}, crs key present: {'crs' in _col} "
+      f"(absent => OGC:CRS84, matching the catalog)")
 
 # area check against the source column — precision snapping must not move it
 a = veg.to_crs(26911).area.sum() / 1e4
