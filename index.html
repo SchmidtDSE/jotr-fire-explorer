@@ -4,19 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CA Protected Lands</title>
+    <title>Joshua Tree Fire Explorer</title>
 
     <!--
-        Geo-Chat core modules loaded from CDN. TEMPORARILY pinned to the PR #336
-        HEAD commit (87e9d1c7) to live-test legend refresh after set_style
-        (geo-agent#333). This SHA branches off geo-agent main, so it also carries
-        the merged upload feature (#327) and grouped legends (#328) that the
-        previous pin (1301513, PR #327 HEAD) was testing.
-        Return to a release tag (@vX.Y.Z, 4 places below) once #336 merges; never
-        use @main in a deployed app. Third-party libraries carry Subresource Integrity
-        (integrity=) hashes — copy this file verbatim and do NOT hand-edit a
-        hash; a mismatched hash blocks the script. Hashes only change when a
-        library version is bumped. See the geo-agent quickstart docs.
+        Geo-agent core modules loaded from CDN, pinned to release v3.25.0.
+        Third-party libraries carry Subresource Integrity (integrity=) hashes —
+        do NOT hand-edit a hash; a mismatched hash blocks the script. Hashes only
+        change when a library version is bumped.
+        See https://boettiger-lab.github.io/geo-agent/
     -->
     <script type="importmap">
     {
@@ -68,9 +63,9 @@
         crossorigin="anonymous"></script>
 
     <!-- Core styles from CDN -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@87e9d1c7/app/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@87e9d1c7/app/chat.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@87e9d1c7/app/sidebar.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@v3.25.0/app/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@v3.25.0/app/chat.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@v3.25.0/app/sidebar.css">
 </head>
 
 <body>
@@ -81,7 +76,7 @@
     <div id="menu"></div>
 
     <!-- Boot from CDN -->
-    <script type="module" src="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@87e9d1c7/app/main.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/boettiger-lab/geo-agent@v3.25.0/app/main.js"></script>
 </body>
 
 </html>

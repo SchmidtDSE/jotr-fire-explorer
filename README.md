@@ -1,113 +1,85 @@
-# geo-agent-template
+# Joshua Tree Fire Explorer
 
-A GitHub template for deploying an AI-powered interactive map app.
-Users describe in plain language what datasets to show; the app uses an LLM agent with map tools and SQL access to visualize and analyze cloud-native geospatial data.
+An agent-driven map for exploring fire severity in Joshua Tree National Park. Ask in
+plain language — "how much of the Eureka Fire had burned before?", "which vegetation
+type burned most severely?" — and the agent writes the SQL, runs it, and puts the
+answer on the map.
 
-**No JavaScript to write.** The core modules (map, chat, agent, tools) are loaded from CDN. You configure which data to show via three small files.
+**Live app:** https://schmidtdse.github.io/jotr-fire-explorer/
 
-**Full documentation:** [boettiger-lab.github.io/geo-agent/docs](https://boettiger-lab.github.io/geo-agent/docs/)
+This is an exploration layer over the analysis in
+[SchmidtDSE/jotr_2025_fire_eda](https://github.com/SchmidtDSE/jotr_2025_fire_eda),
+which remains the authoritative source for post-fire reporting numbers. That
+repository answers seven fixed questions in R; this app answers arbitrary ones against
+the same data.
 
-## Repository structure
+## Data
 
-```
-index.html          ← HTML shell — loads core JS/CSS from CDN
-layers-input.json   ← which STAC collections to show + LLM settings
-system-prompt.md    ← LLM system prompt (customize per app)
-k8s/                ← Kubernetes deployment manifests (optional)
-```
+| Asset | What it is |
+|---|---|
+| `data/eureka-rbr-cog.tif` | Eureka Fire (May 2025) burn severity, 92×81 px, 3,835 valid pixels |
+| `data/black-rock-rbr-cog.tif` | Black Rock Fire (Oct 2025) burn severity, 57×47 px, 1,138 valid pixels |
+| `data/jotr-vegetation.parquet` | NPS vegetation map, 16,499 polygons, 67 map units, 320,788 ha |
+| `data/jotr-vegetation.pmtiles` | Same polygons as vector tiles, for map display |
+| `stac/collection.json` | STAC collection describing all of the above |
 
-## Quick start
+Fire history is **not** vendored here — it comes from the CAL FIRE 2025 perimeter
+collection in the public NRP catalog, which already contains both 2025 fires and every
+prior perimeter in the park.
 
-### 1. Create your repo from this template
+Severity is the **Relativized Burn Ratio** (RBR), `dNBR / (NBR_prefire + 1.001)`, after
+[Parks, Dillon & Miller 2014](https://doi.org/10.3390/rs6031827). Higher is more
+severe; values at or below zero indicate no detected change. RBR is preferred over
+RdNBR here because RdNBR destabilises where pre-fire NBR approaches zero, which is the
+normal condition in sparse Mojave vegetation.
 
-Click **"Use this template"** on GitHub → **"Create a new repository"**.
+Rasters are from the Schmidt DSE Fire Severity Tool. Vegetation polygons are from the
+NPS [Vegetation Mapping Inventory Project for JOTR](https://irma.nps.gov/DataStore/Reference/Profile/2233319).
+Vegetation coordinates are snapped to a 1e-6 degree (~0.1 m) grid to reduce file size;
+this is well below the mapping accuracy of the source and does not change reported
+areas.
 
-### 2. Choose your datasets
+## Architecture
 
-Browse the available STAC catalog:
+Everything is static. GitHub Pages serves the HTML, the config, the STAC collection
+and the data; the app loads the geo-agent core from CDN; queries go to a DuckDB MCP
+server.
 
-```
-https://radiantearth.github.io/stac-browser/#/external/s3-west.nrp-nautilus.io/public-data/stac/catalog.json
-```
+> ⚠️ **This app points at an experimental MCP endpoint**
+> (`experimental-duckdb-mcp.nrp-nautilus.io`), not the production one. The severity
+> rasters are read live with DuckDB's `raster` community extension (`RT_ReadCells`)
+> rather than being pre-aggregated to an H3 hex grid, and that extension is only
+> present on the experimental image. **That endpoint carries no uptime guarantee.**
+> If the app can answer questions about vegetation but not severity, it is the first
+> thing to check.
+>
+> This works because these fires are tiny — a few thousand pixels each. It is not the
+> pattern for a large raster, which should go through the
+> [data-workflows](https://github.com/boettiger-lab/data-workflows) hex pipeline
+> instead.
 
-Edit `layers-input.json` — set your collections and adjust the default map view.
-See the [configuration reference](https://boettiger-lab.github.io/geo-agent/docs/guide/configuration) for all fields.
+## Configuration
 
-### 3. Edit `system-prompt.md`
+Three files, no JavaScript:
 
-Describe the domain, what users are likely to ask, and include SQL examples relevant to your datasets.
+- `index.html` — shell; loads geo-agent from CDN, pinned to a release tag
+- `layers-input.json` — which collections and assets to show, map view, MCP endpoint
+- `system-prompt.md` — domain context and guardrails for the agent
 
-### 4. Deploy
+See the [geo-agent docs](https://boettiger-lab.github.io/geo-agent/) for the full
+configuration reference.
 
-#### Option A: GitHub Pages (no server needed)
+## Rebuilding the data assets
 
-The `llm` block in `layers-input.json` is already enabled. Each visitor enters their own API key (e.g. from [OpenRouter](https://openrouter.ai)) in the in-app settings panel — keys are stored in the browser only, never on the server.
-
-1. Enable GitHub Pages in your repo: Settings → Pages → Source → **GitHub Actions**
-2. Add `.github/workflows/gh-pages.yml`:
-
-```yaml
-name: Deploy to GitHub Pages
-on:
-  push:
-    branches: [main]
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-3. Push — the workflow deploys automatically on changes to `main`.
-
-#### Option B: Kubernetes
-
-API keys are injected server-side via a ConfigMap + Kubernetes secrets — no user-facing key entry.
-
-1. Delete the `llm` block from `layers-input.json` (the server-injected `config.json` takes precedence anyway)
-2. Replace the git clone URL in `k8s/deployment.yaml` with your repo URL
-3. Replace the slug `calenviroscreen` throughout `k8s/` with your app name
-4. Set your hostname in `k8s/ingress.yaml`
-5. Create the required secret:
+`scripts/build_assets.py` regenerates the COGs, GeoParquet and PMTiles from the source
+repository; `scripts/make_stac.py` regenerates the STAC collection from whatever assets
+are on disk, so its pixel counts, value ranges and bounds cannot drift from the files
+they describe.
 
 ```bash
-kubectl create secret generic llm-proxy-secrets \
-  --from-literal=proxy-key=YOUR_PROXY_KEY
+git clone https://github.com/SchmidtDSE/jotr_2025_fire_eda /tmp/jotr_eda
+python scripts/build_assets.py     # writes /tmp/jotr_demo_assets — copy into data/
+python scripts/make_stac.py        # writes stac/collection.json
 ```
 
-6. Deploy:
-
-```bash
-kubectl apply -f k8s/
-kubectl rollout status deployment/my-app
-```
-
-After pushing changes, redeploy: `kubectl rollout restart deployment/my-app`
-
-See the [deployment guide](https://boettiger-lab.github.io/geo-agent/docs/guide/deployment) for full details on all options including Hugging Face Spaces.
-
-## Local development
-
-```bash
-python -m http.server 8000
-# Open http://localhost:8000 — enter your API key in the settings panel
-```
-
-## More resources
-
-- [Configuration reference](https://boettiger-lab.github.io/geo-agent/docs/guide/configuration) — all `layers-input.json` fields with examples
-- [Deployment guide](https://boettiger-lab.github.io/geo-agent/docs/guide/deployment) — GitHub Pages, Hugging Face Spaces, Kubernetes
-- [Core library](https://github.com/boettiger-lab/geo-agent) — source code for the map, chat, and agent modules
+Requires `geopandas`, `rasterio`, `rio-cogeo` and `tippecanoe`.

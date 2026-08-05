@@ -1,0 +1,168 @@
+{
+  "type": "Collection",
+  "id": "jotr-fire-severity",
+  "stac_version": "1.0.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/raster/v1.1.0/schema.json"
+  ],
+  "title": "Joshua Tree NP Fire Severity & Vegetation",
+  "description": "Burn severity rasters for the 2025 Eureka and Black Rock fires in Joshua Tree National Park, together with the park-wide NPS vegetation map. Supports the post-fire reporting questions NPS asks after a burn: how much area burned, in which vegetation types, at what severity, and how much of it had burned before. Historical fire perimeters are not included here \u2014 use the CAL FIRE collections in the public catalog (calfire-2025-firep), which already contain both 2025 fires and every prior perimeter in the park.",
+  "license": "CC-BY-4.0",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -116.4581,
+          33.6702,
+          -115.2621,
+          34.1212
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2025-05-01T00:00:00Z",
+          "2025-10-31T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "providers": [
+    {
+      "name": "Schmidt Center for Data Science & Environment, UC Berkeley",
+      "roles": [
+        "producer",
+        "processor"
+      ],
+      "url": "https://dse.berkeley.edu"
+    },
+    {
+      "name": "National Park Service",
+      "roles": [
+        "producer"
+      ],
+      "url": "https://irma.nps.gov/DataStore/Reference/Profile/2233319"
+    }
+  ],
+  "assets": {
+    "eureka-rbr": {
+      "href": "https://schmidtdse.github.io/jotr-fire-explorer/data/eureka-rbr-cog.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "Eureka Fire \u2014 Relativized Burn Ratio (RBR)",
+      "roles": [
+        "data"
+      ],
+      "description": "Relativized Burn Ratio for the Eureka Fire (2025-05), 92x81 pixels at roughly 15 m, 3,835 valid pixels, observed range -0.220 to 0.502, nodata -9999. RBR = dNBR / (NBR_prefire + 1.001) after Parks, Dillon & Miller (2014). Higher is more severe; values at or below 0 indicate no detected change. Produced by the Schmidt DSE Fire Severity Tool.",
+      "raster:bands": [
+        {
+          "name": "rbr",
+          "data_type": "float32",
+          "nodata": -9999.0,
+          "unit": "dimensionless"
+        }
+      ]
+    },
+    "black-rock-rbr": {
+      "href": "https://schmidtdse.github.io/jotr-fire-explorer/data/black-rock-rbr-cog.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "Black Rock Fire \u2014 Relativized Burn Ratio (RBR)",
+      "roles": [
+        "data"
+      ],
+      "description": "Relativized Burn Ratio for the Black Rock Fire (2025-10), 57x47 pixels at roughly 15 m, 1,138 valid pixels, observed range -0.109 to 0.229, nodata -9999. RBR = dNBR / (NBR_prefire + 1.001) after Parks, Dillon & Miller (2014). Higher is more severe; values at or below 0 indicate no detected change. Produced by the Schmidt DSE Fire Severity Tool.",
+      "raster:bands": [
+        {
+          "name": "rbr",
+          "data_type": "float32",
+          "nodata": -9999.0,
+          "unit": "dimensionless"
+        }
+      ]
+    },
+    "vegetation-pmtiles": {
+      "href": "https://schmidtdse.github.io/jotr-fire-explorer/data/jotr-vegetation.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "JOTR Vegetation Map (PMTiles)",
+      "roles": [
+        "visual"
+      ],
+      "description": "16,499 vegetation polygons, zoom 6-14, for map display.",
+      "vector:layers": [
+        "vegetation"
+      ],
+      "table:columns": [
+        {
+          "name": "Poly_ID",
+          "type": "int64",
+          "description": "Source polygon identifier from the NPS vegetation map."
+        },
+        {
+          "name": "MapUnit_ID",
+          "type": "int64",
+          "description": "Numeric code for the vegetation map unit."
+        },
+        {
+          "name": "MapUnit_Name",
+          "type": "string",
+          "description": "Vegetation map unit name, e.g. 'Singleleaf Pinyon / Muller Oak Woodland Association'. 67 distinct units across the park. This is the column to group by for vegetation breakdowns."
+        },
+        {
+          "name": "Hectares",
+          "type": "float64",
+          "description": "Polygon area in hectares as published by NPS. Prefer this over recomputing area from geometry."
+        }
+      ]
+    },
+    "vegetation-parquet": {
+      "href": "https://schmidtdse.github.io/jotr-fire-explorer/data/jotr-vegetation.parquet",
+      "type": "application/x-parquet",
+      "title": "JOTR Vegetation Map (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "description": "DuckDB-native GeoParquet, 16,499 polygons covering 320,788 ha, 67 map units, POLYGON/MULTIPOLYGON in WGS84 (OGC:CRS84). Vegetation Mapping Inventory Project for Joshua Tree NP (NPS). Coordinates are snapped to a 1e-6 degree (~0.1 m) grid to reduce file size; this is far below the mapping accuracy of the source and does not change reported areas.",
+      "table:columns": [
+        {
+          "name": "Poly_ID",
+          "type": "int64",
+          "description": "Source polygon identifier from the NPS vegetation map."
+        },
+        {
+          "name": "MapUnit_ID",
+          "type": "int64",
+          "description": "Numeric code for the vegetation map unit."
+        },
+        {
+          "name": "MapUnit_Name",
+          "type": "string",
+          "description": "Vegetation map unit name, e.g. 'Singleleaf Pinyon / Muller Oak Woodland Association'. 67 distinct units across the park. This is the column to group by for vegetation breakdowns."
+        },
+        {
+          "name": "Hectares",
+          "type": "float64",
+          "description": "Polygon area in hectares as published by NPS. Prefer this over recomputing area from geometry."
+        },
+        {
+          "name": "geometry",
+          "type": "geometry",
+          "description": "POLYGON/MULTIPOLYGON in WGS84 (OGC:CRS84), i.e. longitude, latitude."
+        }
+      ]
+    }
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://schmidtdse.github.io/jotr-fire-explorer/stac/collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "about",
+      "href": "https://github.com/SchmidtDSE/jotr_2025_fire_eda",
+      "type": "text/html",
+      "title": "Source R analysis this app is derived from"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+"""Build the demo app's data assets: COGs for the RBR rasters, PMTiles + GeoParquet
+for the JOTR vegetation polygons."""
+import os, subprocess, json
+import geopandas as gpd
+from shapely import set_precision
+from rio_cogeo.cogeo import cog_translate, cog_validate
+from rio_cogeo.profiles import cog_profiles
+
+SRC = "/tmp/jotr_eda"
+OUT = "/tmp/jotr_demo_assets"
+os.makedirs(OUT, exist_ok=True)
+
+
+def mb(p):
+    return f"{os.path.getsize(p)/1e6:.1f} MB"
+
+
+# --- 1. RBR rasters -> COG -------------------------------------------------
+# Tiny rasters, so overviews barely matter; do it anyway so titiler gets a
+# well-formed COG and the STAC asset type is honest.
+for fire in ("eureka", "black_rock"):
+    src = f"{SRC}/fires/{fire}/inputs/refined_rbr.tif"
+    dst = f"{OUT}/{fire.replace('_', '-')}-rbr-cog.tif"
+    cog_translate(src, dst, cog_profiles.get("deflate"), overview_resampling="bilinear",
+                  quiet=True, web_optimized=False)
+    valid, errs, warns = cog_validate(dst)
+    print(f"COG {fire:11} {mb(dst):>9}  valid={valid}  errors={errs or 'none'}")
+
+# --- 2. Vegetation polygons ------------------------------------------------
+veg = gpd.read_file(f"{SRC}/shared_inputs/jotrgeodata.gpkg", layer="JOTR_VegPolys").to_crs(4326)
+veg = veg[["Poly_ID", "MapUnit_ID", "MapUnit_Name", "Hectares", "geometry"]].copy()
+
+# Snap coordinates to a 1e-6 degree grid (~0.1 m). Far below the mapping accuracy
+# of the source polygons, so reported hectares are unaffected, but it collapses
+# float64 noise and compresses much better than the raw coordinates.
+veg["geometry"] = set_precision(veg.geometry.values, 1e-6)
+veg = veg[~veg.geometry.is_empty & veg.geometry.notna()]
+
+pq = f"{OUT}/jotr-vegetation.parquet"
+veg.to_parquet(pq, compression="zstd", write_covering_bbox=False)
+print(f"\nGeoParquet  {mb(pq):>9}  {len(veg):,} features, {veg.MapUnit_Name.nunique()} map units")
+
+# area check against the source column — precision snapping must not move it
+a = veg.to_crs(26911).area.sum() / 1e4
+print(f"area check: sum(Hectares)={veg.Hectares.sum():,.1f} ha vs geometry={a:,.1f} ha "
+      f"({100*abs(a-veg.Hectares.sum())/veg.Hectares.sum():.3f}% diff)")
+
+# --- 3. PMTiles for the map ------------------------------------------------
+gj = f"{OUT}/veg.geojsonl"
+veg.to_file(gj, driver="GeoJSONSeq")
+pmt = f"{OUT}/jotr-vegetation.pmtiles"
+subprocess.run([
+    "tippecanoe", "-o", pmt, "--force",
+    "--layer=vegetation",
+    "-Z6", "-z14",                      # park-wide overview through fire-scale detail
+    "--drop-densest-as-needed",
+    "--extend-zooms-if-still-dropping",
+    "--no-tile-size-limit",
+    gj,
+], check=True, capture_output=True)
+os.remove(gj)
+print(f"PMTiles     {mb(pmt):>9}")
+
+print("\n--- assets ---")
+for f in sorted(os.listdir(OUT)):
+    print(f"  {f:34} {mb(os.path.join(OUT, f)):>9}")
