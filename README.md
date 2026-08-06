@@ -23,9 +23,19 @@ the same data.
 | `data/jotr-vegetation.pmtiles` | Same polygons as vector tiles, for map display |
 | `stac/collection.json` | STAC collection describing all of the above |
 
-Fire history is **not** vendored here — it comes from the CAL FIRE 2025 perimeter
-collection in the public NRP catalog, which already contains both 2025 fires and every
-prior perimeter in the park.
+Two more layers come from the public NRP catalog rather than being vendored here:
+
+- **CAL FIRE 2025 fire perimeters** — already contains both 2025 fires and every prior
+  perimeter in the park.
+- **CWHR habitat types** (`cwhr`) — CAL FIRE FVEG, a 30 m statewide raster in the 60+
+  class California Wildlife Habitat Relationships classification, drawn with its STAC
+  `classification:classes` colors.
+
+CWHR and the NPS map units are two different classifications of the same ground, built
+by different methods at different times; they disagree, and the system prompt tells the
+agent to keep them apart. CWHR's native hex is h10 (~1.5 ha), so the whole Eureka Fire
+is only ~58 cells — it is context for the wider landscape, not a tool for fire-scale
+severity breakdowns.
 
 Severity is the **Relativized Burn Ratio** (RBR), `dNBR / (NBR_prefire + 1.001)`, after
 [Parks, Dillon & Miller 2014](https://doi.org/10.3390/rs6031827). Higher is more

@@ -21,7 +21,7 @@
         {
             "collection_id": "jotr-fire-severity",
             "collection_url": "https://schmidtdse.github.io/jotr-fire-explorer/stac/collection.json",
-            "group": "Joshua Tree fires",
+            "group": "Fire severity",
             "assets": [
                 {
                     "id": "eureka-rbr",
@@ -41,7 +41,8 @@
                 },
                 {
                     "id": "vegetation-pmtiles",
-                    "display_name": "Vegetation map units",
+                    "display_name": "NPS vegetation map units (park only)",
+                    "group": "Vegetation & habitat",
                     "visible": false,
                     "default_style": {
                         "fill-color": "#4C9A6B",
@@ -55,6 +56,20 @@
                         "MapUnit_Name",
                         "Hectares"
                     ]
+                }
+            ]
+        },
+        {
+            "collection_id": "cwhr",
+            "collection_url": "https://s3-west.nrp-nautilus.io/public-ca30x30/cwhr/stac-collection.json",
+            "group": "Vegetation & habitat",
+            "assets": [
+                {
+                    "id": "cwhr-cog",
+                    "display_name": "CWHR habitat types (60+ class, statewide)",
+                    "visible": false,
+                    "legend_type": "categorical",
+                    "legend_label": "CWHR habitat type"
                 }
             ]
         },
@@ -89,12 +104,8 @@
         "default_endpoint": "https://openrouter.ai/api/v1",
         "models": [
             {
-                "value": "anthropic/claude-sonnet-5",
-                "label": "Claude Sonnet 5"
-            },
-            {
-                "value": "google/gemini-3.5-flash-lite",
-                "label": "Gemini 3.5 Flash Lite"
+                "value": "deepseek/deepseek-v4-flash-0731",
+                "label": "DeepSeek V4 Flash 0731"
             },
             {
                 "value": "z-ai/glm-5.2",

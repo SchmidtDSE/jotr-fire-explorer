@@ -55,15 +55,40 @@ and every area will look previously burned. Areas with no prior perimeter are
 record thins out before the 1970s, so describe them as "no recorded prior fire" rather
 than "never burned".
 
-## Vegetation
+## Vegetation — two classifications, and they are not interchangeable
 
-`MapUnit_Name` is the grouping column for vegetation breakdowns (67 units park-wide;
-around seven of them appear in any one of these fires). Prefer the published
-`Hectares` column over recomputing polygon area.
+**NPS map units** (`jotr-fire-severity`, this app's own collection) — field-based
+polygons, park boundary only, 67 units, of which about seven appear in any one of
+these fires. `MapUnit_Name` is the grouping column; prefer the published `Hectares`
+column over recomputing polygon area. Names end in "Association", "Woodland
+Association" or "Shrubland Association" — trim that suffix in chart labels, but keep
+the full name when the user needs to match it against a source table.
 
-Vegetation names are long and end in "Association", "Woodland Association" or
-"Shrubland Association" — trim that suffix in chart labels, but keep the full name
-when the user needs to match it against a source table.
+**CWHR habitat types** (`cwhr`) — CAL FIRE FVEG, a 30 m statewide raster compiled from
+sources spanning roughly 1990–2022, 60+ classes keyed by `whrnum`.
+
+These are different classifications of the same ground, built by different methods at
+different times, so **they will disagree, and that is not an error**. Always name which
+one a number came from. Never join them class-to-class as if the categories
+corresponded — nothing guarantees a CWHR "Pinyon-Juniper" cell and an NPS "Singleleaf
+Pinyon / Muller Oak Woodland Association" polygon delineate the same stand.
+
+**Which to use.** Inside the park, and for anything about these fires, use the NPS
+polygons: they are field-based and resolve individual stands. CWHR is for context
+*outside* the park boundary, for comparison against a statewide classification, and
+for questions that span more of California than JOTR.
+
+⚠️ **CWHR is too coarse for fire-scale severity work.** Its native hex is h10, about
+1.5 ha per cell. The whole Eureka Fire is ~87 ha — roughly 58 cells. A "severity by
+CWHR class" table for one of these fires would look precise and mean almost nothing.
+If asked for one, say why, give the NPS-polygon version instead, and only fall back to
+CWHR if the user still wants it after hearing that.
+
+⚠️ **CWHR area comes from `cwhr-hex-fractions`, not `cwhr-hex`.** The `mode` asset
+stores one dominant class per cell; counting cells per class reproduces a known
+reclassification bias. For any area or composition question use the fractions asset and
+area-weight `frac` by cell area, excluding `whrnum = 0` (nodata). `whrnum` is
+categorical — never SUM or AVG it; roll up with MODE.
 
 ## Framing
 
