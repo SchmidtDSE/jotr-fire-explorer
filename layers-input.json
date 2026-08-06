@@ -3,6 +3,9 @@
     "titiler_url": "https://titiler.nrp-nautilus.io",
     "mcp_url": "https://experimental-duckdb-mcp.nrp-nautilus.io/mcp",
     "auto_approve": true,
+    "links": {
+        "github": "https://github.com/SchmidtDSE/jotr-fire-explorer"
+    },
     "charts": {
         "enabled": true
     },
