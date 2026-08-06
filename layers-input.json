@@ -4,7 +4,8 @@
     "mcp_url": "https://experimental-duckdb-mcp.nrp-nautilus.io/mcp",
     "auto_approve": true,
     "links": {
-        "github": "https://github.com/SchmidtDSE/jotr-fire-explorer"
+        "github": "https://github.com/SchmidtDSE/jotr-fire-explorer",
+        "docs": "/jotr-fire-explorer/docs.html"
     },
     "charts": {
         "enabled": true
@@ -44,19 +45,40 @@
                 },
                 {
                     "id": "vegetation-pmtiles",
-                    "display_name": "NPS vegetation map units (park only)",
+                    "display_name": "NPS vegetation (NVCS group)",
                     "group": "Vegetation & habitat",
                     "visible": false,
                     "default_style": {
-                        "fill-color": "#4C9A6B",
-                        "fill-opacity": 0.35
+                        "fill-color": [
+                            "match",
+                            ["get", "veg_grp"],
+                            1, "#934f0e",
+                            2, "#0e7556",
+                            3, "#a38b09",
+                            4, "#279fa1",
+                            5, "#418af4",
+                            "#8a8a83"
+                        ],
+                        "fill-opacity": 0.55
                     },
                     "outline_style": {
-                        "line-color": "#2F6647",
-                        "line-width": 0.6
+                        "line-color": "#3d3d38",
+                        "line-width": 0.4,
+                        "line-opacity": 0.5
                     },
+                    "legend_type": "categorical",
+                    "legend_label": "NVCS vegetation group",
+                    "legend_classes": [
+                        { "value": 1, "name": "Creosotebush – White Bursage Desert Scrub", "color_hint": "934f0e" },
+                        { "value": 2, "name": "Mojave Mid-Elevation Mixed Desert Scrub", "color_hint": "0e7556" },
+                        { "value": 3, "name": "Warm Desert Dunes & Sand Flats", "color_hint": "a38b09" },
+                        { "value": 4, "name": "Great Basin Pinyon – Juniper Woodland", "color_hint": "279fa1" },
+                        { "value": 5, "name": "Semi-Desert Wash Woodland / Scrub", "color_hint": "418af4" },
+                        { "value": 9, "name": "Other (7 groups, 5% of park)", "color_hint": "8a8a83" }
+                    ],
                     "tooltip_fields": [
                         "MapUnit_Name",
+                        "Groups",
                         "Hectares"
                     ]
                 }

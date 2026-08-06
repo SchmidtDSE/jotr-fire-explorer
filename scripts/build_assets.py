@@ -28,7 +28,35 @@ for fire in ("eureka", "black_rock"):
 
 # --- 2. Vegetation polygons ------------------------------------------------
 veg = gpd.read_file(f"{SRC}/shared_inputs/jotrgeodata.gpkg", layer="JOTR_VegPolys").to_crs(4326)
-veg = veg[["Poly_ID", "MapUnit_ID", "MapUnit_Name", "Hectares", "geometry"]].copy()
+
+# Join the NVCS classification hierarchy shipped with the geodatabase. 67 map units
+# is far more than a legend can carry, so the map colors by NVCS Group — the
+# published rollup — rather than by anything parsed out of the unit names.
+nvcs = gpd.read_file(f"{SRC}/shared_inputs/jotrgeodata.gpkg",
+                     layer="JOTR_tMapUnit_NVCS2", ignore_geometry=True)
+veg = veg.merge(nvcs[["MapUnitID", "Class", "Macrogroup", "Groups"]],
+                left_on="MapUnit_ID", right_on="MapUnitID", how="left")
+assert veg["Groups"].notna().all(), "every polygon must carry an NVCS Group"
+
+# Five colored classes + Other. Five is the most the data-viz all-pairs gates admit
+# for a choropleth (six fails the normal-vision floor at ΔE 12.6 < 15), so the
+# ranking is by park-wide area and the tail folds into Other — 5.2% across 7 groups.
+GROUP_CODES = {
+    "Sonoran-Mojave Creosotebush - White Bursage Desert Scrub": 1,
+    "Mojave Mid-Elevation Mixed Desert Scrub": 2,
+    "North American Warm Desert Dunes & Sand Flats": 3,
+    "Great Basin Pinyon - Juniper Woodland": 4,
+    "Sonoran-Coloradan Semi-Desert Wash Woodland / Scrub": 5,
+}
+veg["veg_grp"] = veg["Groups"].map(GROUP_CODES).fillna(9).astype("int16")
+
+_top = veg.groupby("veg_grp").Hectares.sum().sort_values(ascending=False)
+print("veg_grp areas (9 = Other):")
+for k, v in _top.items():
+    print(f"   {k}  {v:10,.0f} ha  {100*v/veg.Hectares.sum():5.1f}%")
+
+veg = veg[["Poly_ID", "MapUnit_ID", "MapUnit_Name", "Hectares",
+           "Class", "Macrogroup", "Groups", "veg_grp", "geometry"]].copy()
 
 # Snap coordinates to a 1e-6 degree grid (~0.1 m). Far below the mapping accuracy
 # of the source polygons, so reported hectares are unaffected, but it collapses
@@ -80,6 +108,7 @@ pmt = f"{OUT}/jotr-vegetation.pmtiles"
 subprocess.run([
     "tippecanoe", "-o", pmt, "--force",
     "--layer=vegetation",
+    "-y", "Poly_ID", "-y", "MapUnit_Name", "-y", "Hectares", "-y", "veg_grp", "-y", "Groups",
     "-Z6", "-z14",                      # park-wide overview through fire-scale detail
     "--drop-densest-as-needed",
     "--extend-zooms-if-still-dropping",

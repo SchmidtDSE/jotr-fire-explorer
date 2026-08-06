@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About — Joshua Tree Fire Explorer</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --surface: #fcfcfb;
+            --surface-2: #f2f2ef;
+            --ink: #14140f;
+            --ink-2: #52514e;
+            --rule: #dcdbd4;
+            --accent: #10699f;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --surface: #1a1a19;
+                --surface-2: #232322;
+                --ink: #f4f4ef;
+                --ink-2: #b6b5ad;
+                --rule: #3a3a37;
+                --accent: #6fb4dd;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 2.5rem 1.25rem 5rem;
+            background: var(--surface);
+            color: var(--ink);
+            font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        main { max-width: 46rem; margin: 0 auto; }
+
+        h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 .4rem; letter-spacing: -.02em; }
+        h2 { font-size: 1.2rem; margin: 2.4rem 0 .7rem; letter-spacing: -.01em; }
+        .lede { color: var(--ink-2); font-size: 1.05rem; margin: 0 0 1.5rem; }
+        p, li { color: var(--ink); }
+        a { color: var(--accent); }
+        code { background: var(--surface-2); padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+
+        .back {
+            display: inline-block; margin-bottom: 2rem; font-size: .9rem;
+            text-decoration: none; color: var(--ink-2);
+        }
+        .back:hover { color: var(--accent); }
+
+        table { border-collapse: collapse; width: 100%; margin: .8rem 0 1.2rem; font-size: .93rem; display: block; overflow-x: auto; }
+        th, td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+        th { font-weight: 600; color: var(--ink-2); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+
+        .note {
+            border-left: 3px solid var(--accent); background: var(--surface-2);
+            padding: .8rem 1rem; margin: 1.2rem 0; font-size: .95rem;
+        }
+        .swatch { display: inline-block; width: .85rem; height: .85rem; border-radius: 2px; vertical-align: -1px; margin-right: .5rem; }
+        footer { margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--rule); color: var(--ink-2); font-size: .87rem; }
+    </style>
+</head>
+
+<body>
+    <main>
+        <a class="back" href="./">&larr; Back to the map</a>
+
+        <h1>Joshua Tree Fire Explorer</h1>
+        <p class="lede">An exploration layer over the 2025 Eureka and Black Rock fires in Joshua Tree
+            National Park — burn severity, vegetation, and fire history, queried in plain language.</p>
+
+        <h2>This is not the authoritative analysis</h2>
+        <p>The numbers of record for post-fire reporting come from
+            <a href="https://github.com/SchmidtDSE/jotr_2025_fire_eda">SchmidtDSE/jotr_2025_fire_eda</a>,
+            an R analysis using exact area-weighted raster extraction
+            (<code>exactextractr</code>). Its rendered report is
+            <a href="https://schmidtdse.github.io/jotr_2025_fire_eda/">published here</a>.</p>
+        <p>That analysis answers seven fixed questions. This app answers arbitrary ones against the
+            same data, and computes areas differently — expect agreement to within roughly a percent,
+            not to the digit. Where the two disagree, the R analysis is correct. If you are pulling a
+            number for a report, pull it from there.</p>
+
+        <h2>Data sources</h2>
+        <table>
+            <thead>
+                <tr><th>Layer</th><th>Source</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Burn severity (RBR)</td>
+                    <td>Schmidt DSE
+                        <a href="https://storage.googleapis.com/fire-recovery-web/prod/fireSeverity.html">Fire Severity Tool</a>,
+                        Sentinel-derived, ~15 m</td>
+                </tr>
+                <tr>
+                    <td>Vegetation map units</td>
+                    <td>NPS
+                        <a href="https://irma.nps.gov/DataStore/Reference/Profile/2233319">Vegetation Mapping Inventory Project</a>
+                        for Joshua Tree NP — 16,499 polygons, 67 units</td>
+                </tr>
+                <tr>
+                    <td>Fire perimeters</td>
+                    <td>CAL FIRE FRAP
+                        <a href="https://www.fire.ca.gov/what-we-do/fire-resource-assessment-program/fire-perimeters">fire perimeters</a>,
+                        2025 release</td>
+                </tr>
+                <tr>
+                    <td>CWHR habitat types</td>
+                    <td>CAL FIRE FRAP FVEG 2022, California Wildlife Habitat Relationships
+                        classification, 30 m statewide</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>What RBR means</h2>
+        <p>Severity is the <strong>Relativized Burn Ratio</strong>, from
+            <a href="https://doi.org/10.3390/rs6031827">Parks, Dillon &amp; Miller (2014)</a>:</p>
+        <p style="text-align:center"><code>RBR = dNBR / (NBR<sub>prefire</sub> + 1.001)</code></p>
+        <p>where <code>NBR = (NIR − SWIR) / (NIR + SWIR)</code>, an index that drops sharply when fire
+            removes vegetation moisture and chars soil. Higher RBR means more severe. <strong>Values at
+            or below zero mean no detected change.</strong></p>
+        <p>RBR is used here rather than dNBR or RdNBR because RdNBR becomes unstable wherever pre-fire
+            NBR approaches zero — the normal condition in sparse Mojave desert vegetation. Severity
+            <em>class</em> breaks (low / moderate / high) are calibration-dependent and are deliberately
+            not published here.</p>
+
+        <h2>Two vegetation classifications</h2>
+        <p>The NPS map units and the CWHR habitat types classify the same ground by different methods
+            at different times. <strong>They disagree, and that is not an error.</strong> Inside the
+            park, the NPS polygons are field-based and resolve individual stands, so they are what the
+            fire analyses use. CWHR is a 30 m statewide raster — useful for context beyond the park
+            boundary, too coarse for fire-scale work (its native hex cell is ~1.5 ha, so the entire
+            87 ha Eureka Fire is about 58 cells).</p>
+        <p>The map colors NPS polygons by their <a href="https://usnvc.org/">NVCS</a> Group — the
+            published classification hierarchy shipped with the NPS geodatabase — rather than by the
+            67 individual map units, which is more categories than any legend can carry. Hover any
+            polygon for its full map unit name.</p>
+
+        <h2>How it works</h2>
+        <p>Everything is static. GitHub Pages serves the page, the configuration, the STAC collection
+            and the data. The map and agent load from CDN
+            (<a href="https://boettiger-lab.github.io/geo-agent/">geo-agent</a>). Questions are
+            answered by an LLM writing DuckDB SQL against cloud-native files, through an MCP server.</p>
+        <div class="note">
+            <strong>Experimental endpoint.</strong> The severity rasters are read live with DuckDB's
+            <code>raster</code> community extension rather than being pre-aggregated to a hex grid,
+            which only exists on an experimental MCP deployment. That endpoint carries no uptime
+            guarantee. If vegetation questions work but severity questions fail, that is why.
+        </div>
+        <p>You supply your own model key; nothing is stored server-side.</p>
+
+        <footer>
+            Built by the <a href="https://dse.berkeley.edu">Schmidt Center for Data Science &amp;
+            Environment</a>, UC Berkeley.
+            Source: <a href="https://github.com/SchmidtDSE/jotr-fire-explorer">SchmidtDSE/jotr-fire-explorer</a>.
+            Data licensed CC-BY-4.0; see each source for its own terms. CAL FIRE makes no warranty as
+            to the accuracy of its data.
+        </footer>
+    </main>
+</body>
+
+</html>
