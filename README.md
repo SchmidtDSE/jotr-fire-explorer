@@ -76,7 +76,7 @@ Three files, no JavaScript:
 - `layers-input.json` — which collections and assets to show, map view, MCP endpoint
 - `system-prompt.md` — domain context and guardrails for the agent
 
-See the [geo-agent docs](https://boettiger-lab.github.io/geo-agent/) for the full
+See the [geo-agent docs](https://schmidtdse.github.io/glen/) for the full
 configuration reference.
 
 ## Rebuilding the data assets
